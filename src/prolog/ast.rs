@@ -104,29 +104,29 @@ impl GenContext {
 pub type Predicate = Vec<PredicateClause>;
 
 pub enum PredicateClause {
-    Fact(Term),
-    Rule(Rule)
+    Fact(Term, AD),
+    Rule(Rule, AD)
 }
 
 impl PredicateClause {
     pub fn first_arg(&self) -> Option<&Term> {
         match self {
-            &PredicateClause::Fact(ref term) => term.first_arg(),
-            &PredicateClause::Rule(ref rule) => rule.head.1.first().map(|bt| bt.as_ref()),
+            &PredicateClause::Fact(ref term, _) => term.first_arg(),
+            &PredicateClause::Rule(ref rule, _) => rule.head.1.first().map(|bt| bt.as_ref()),
         }
     }
 
     pub fn arity(&self) -> usize {
         match self {
-            &PredicateClause::Fact(ref term) => term.arity(),
-            &PredicateClause::Rule(ref rule) => rule.head.1.len()
+            &PredicateClause::Fact(ref term, _) => term.arity(),
+            &PredicateClause::Rule(ref rule, _) => rule.head.1.len()
         }
     }
 
     pub fn name(&self) -> Option<ClauseName> {
         match self {
-            &PredicateClause::Fact(ref term) => term.name(),
-            &PredicateClause::Rule(ref rule) => Some(rule.head.0.clone()),
+            &PredicateClause::Fact(ref term, _) => term.name(),
+            &PredicateClause::Rule(ref rule, _) => Some(rule.head.0.clone()),
         }
     }
 }
@@ -237,17 +237,17 @@ pub enum Declaration {
 
 pub enum TopLevel {
     Declaration(Declaration),
-    Fact(Term),
+    Fact(Term, f32),
     Predicate(Predicate),
     Query(Vec<QueryTerm>),
-    Rule(Rule)
+    Rule(Rule, f32)
 }
 
 impl TopLevel {
     pub fn name(&self) -> Option<ClauseName> {
         match self {
             &TopLevel::Declaration(_) => None,
-            &TopLevel::Fact(ref term) => term.name(),
+            &TopLevel::Fact(ref term, _) => term.name(),
             &TopLevel::Predicate(ref clauses) =>
                 if let Some(ref term) = clauses.first() {
                     term.name()
@@ -255,7 +255,7 @@ impl TopLevel {
                     None
                 },
             &TopLevel::Query(_) => None,
-            &TopLevel::Rule(Rule { ref head, .. }) =>
+            &TopLevel::Rule(Rule { ref head, .. }, _) =>
                 Some(head.0.clone())
         }
     }
@@ -263,11 +263,11 @@ impl TopLevel {
     pub fn arity(&self) -> usize {
         match self {
             &TopLevel::Declaration(_) => 0,
-            &TopLevel::Fact(ref term) => term.arity(),
+            &TopLevel::Fact(ref term, _) => term.arity(),
             &TopLevel::Predicate(ref clauses) =>
                 clauses.first().map(|t| t.arity()).unwrap_or(0),
             &TopLevel::Query(_) => 0,
-            &TopLevel::Rule(Rule { ref head, .. }) => head.1.len()
+            &TopLevel::Rule(Rule { ref head, .. }, _) => head.1.len()
         }
     }
 }
@@ -539,6 +539,8 @@ impl fmt::Display for Constant {
     }
 }
 
+pub type AD = f32;
+
 #[derive(PartialEq, Eq, Clone)]
 pub enum Term {
     AnonVar,
@@ -702,7 +704,7 @@ impl ClauseType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ClauseName {
     BuiltIn(&'static str),
     User(TabledRc<Atom>)

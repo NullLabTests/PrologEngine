@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 pub type TabledData<T> = Rc<RefCell<HashSet<Rc<T>>>>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TabledRc<T: Hash + Eq> {
     atom: Rc<T>,
     table: TabledData<T>

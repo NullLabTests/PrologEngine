@@ -5,6 +5,7 @@ use prolog::debray_allocator::*;
 use prolog::heap_print::*;
 use prolog::machine::*;
 use prolog::parser::toplevel::*;
+use prolog::similarity::*;
 
 use termion::raw::IntoRawMode;
 use termion::input::TermRead;
@@ -440,9 +441,9 @@ pub fn print_code(code: &Code) {
     }
 }
 
-pub fn parse_code(wam: &Machine, buffer: &str) -> Result<TopLevelPacket, ParserError>
+pub fn parse_code(wam: &Machine, buffer: &str, similarity_tbl: SimilarityTable) -> Result<TopLevelPacket, ParserError>
 {
-    let mut worker = TopLevelWorker::new(buffer.as_bytes(), wam.atom_tbl());
+    let mut worker = TopLevelWorker::new(buffer.as_bytes(), wam.atom_tbl(), similarity_tbl);
     worker.parse_code(&wam.op_dir)
 }
 
@@ -495,10 +496,10 @@ fn compile_relation(tl: &TopLevel) -> Result<Code, ParserError>
             Err(ParserError::ExpectedRel),
         &TopLevel::Predicate(ref clauses) =>
             cg.compile_predicate(clauses),
-        &TopLevel::Fact(ref fact) =>
-            Ok(cg.compile_fact(fact)),
-        &TopLevel::Rule(ref rule) =>
-            cg.compile_rule(rule)
+        &TopLevel::Fact(ref fact, ad) =>
+            Ok(cg.compile_fact(fact, ad)),
+        &TopLevel::Rule(ref rule, ad) =>
+            cg.compile_rule(rule, ad)
     }
 }
 
@@ -585,7 +586,7 @@ pub fn compile_packet(wam: &mut Machine, tl: TopLevelPacket) -> EvalSession
     }
 }
 
-pub fn compile_listing(wam: &mut Machine, src_str: &str) -> EvalSession
+pub fn compile_listing(wam: &mut Machine, src_str: &str, similarity_tbl: SimilarityTable) -> EvalSession
 {
     fn get_module_name(module: &Option<Module>) -> ClauseName {
         match module {
@@ -599,7 +600,7 @@ pub fn compile_listing(wam: &mut Machine, src_str: &str) -> EvalSession
 
     let mut code = Vec::new();
 
-    let mut worker = TopLevelWorker::new(src_str.as_bytes(), wam.atom_tbl());
+    let mut worker = TopLevelWorker::new(src_str.as_bytes(), wam.atom_tbl(), similarity_tbl);
     let tls = try_eval_session!(worker.parse_batch(&mut op_dir));
 
     for tl in tls {

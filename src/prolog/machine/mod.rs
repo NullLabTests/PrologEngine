@@ -2,6 +2,7 @@ use prolog::ast::*;
 use prolog::builtins::*;
 use prolog::heap_print::*;
 use prolog::tabled_rc::*;
+use prolog::similarity::*;
 
 pub(crate) mod machine_state;
 #[macro_use]

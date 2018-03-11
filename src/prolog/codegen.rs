@@ -10,6 +10,7 @@ use std::cell::Cell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::vec::Vec;
+use prolog::ast::PredicateClause::Fact;
 
 pub struct CodeGenerator<TermMarker> {
     marker: TermMarker,
@@ -534,7 +535,7 @@ impl<'a, TermMarker: Allocator<'a>> CodeGenerator<TermMarker>
         }
     }
 
-    pub fn compile_rule<'b: 'a>(&mut self, rule: &'b Rule) -> Result<Code, ParserError>
+    pub fn compile_rule<'b: 'a>(&mut self, rule: &'b Rule, ad: f32) -> Result<Code, ParserError>
     {
         let iter = ChunkedIterator::from_rule(rule);
         let conjunct_info = self.collect_var_data(iter);
@@ -599,7 +600,7 @@ impl<'a, TermMarker: Allocator<'a>> CodeGenerator<TermMarker>
         }
     }
 
-    pub fn compile_fact<'b: 'a>(&mut self, term: &'b Term) -> Code
+    pub fn compile_fact<'b: 'a>(&mut self, term: &'b Term, ad: f32) -> Code
     {
         self.update_var_count(term.post_order_iter());
 
@@ -711,10 +712,10 @@ impl<'a, TermMarker: Allocator<'a>> CodeGenerator<TermMarker>
             self.marker.reset();
 
             let mut clause_code = match clause {
-                &PredicateClause::Fact(ref fact) =>
-                    self.compile_fact(fact),
-                &PredicateClause::Rule(ref rule) =>
-                    try!(self.compile_rule(rule))
+                &PredicateClause::Fact(ref fact, ad) =>
+                    self.compile_fact(fact, ad),
+                &PredicateClause::Rule(ref rule, ad) =>
+                    try!(self.compile_rule(rule, ad))
             };
 
             if num_clauses > 1 {
@@ -744,6 +745,9 @@ impl<'a, TermMarker: Allocator<'a>> CodeGenerator<TermMarker>
     pub fn compile_predicate<'b: 'a>(&mut self, clauses: &'b Vec<PredicateClause>)
                                      -> Result<Code, ParserError>
     {
+        for clause in clauses {
+            println!("{:?}", clause.name());
+        }
         let mut code   = Vec::new();
         let split_pred = Self::split_predicate(&clauses);
         let multi_seq  = split_pred.len() > 1;

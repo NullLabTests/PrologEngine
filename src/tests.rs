@@ -8,6 +8,8 @@ fn test_queries_on_facts()
 
     submit(&mut wam, "p(Z, Z).");
     submit(&mut wam, "clouds(are, nice).");
+    submit(&mut wam, "are(X, great) :- are(X, nice).");
+    submit(&mut wam, "are(great) :- are(X, nice).");
 
     assert_prolog_success!(&mut wam, "?- p(Z, Z).", [["Z = _0"]]);
     assert_prolog_success!(&mut wam, "?- p(Z, z).", [["Z = z"]]);
